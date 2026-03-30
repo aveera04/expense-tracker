@@ -27,7 +27,7 @@
         
         <div class="hero-actions-v2">
             <a href="{{ url_for('register') }}" class="btn-black">Create free account</a>
-            <a href="#" class="btn-black">See how it works</a>
+            <a href="#" id="open-video-modal" class="btn-black">See how it works</a>
         </div>
     </div>
 
@@ -83,6 +83,16 @@
     </div>
 </section>
 
+<!-- Video Modal -->
+<div id="video-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <div class="video-wrapper">
+            <iframe id="video-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
+
 <section class="features">
     <div class="features-inner">
         <div class="feature-card">
@@ -111,4 +121,44 @@
     </div>
 </section>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('video-modal');
+        const openBtn = document.getElementById('open-video-modal');
+        const closeBtn = document.querySelector('.close-modal');
+        const iframe = document.getElementById('video-iframe');
+        const videoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"; // Placeholder
+
+        openBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            iframe.src = videoUrl;
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent scroll
+        });
+
+        function closeModal() {
+            modal.style.display = 'none';
+            iframe.src = ''; // Stop video
+            document.body.style.overflow = ''; // Restore scroll
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+
+        window.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'block') {
+                closeModal();
+            }
+        });
+    });
+</script>
 {% endblock %}
