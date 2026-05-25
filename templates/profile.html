@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile — Spendly{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Top Grid: User Info Card & Summary Stats -->
+    <div class="profile-header-grid">
+        <!-- User Info Card -->
+        <div class="profile-card user-card">
+            <div class="user-avatar-wrapper">
+                <div class="user-avatar">{{ user.initials }}</div>
+                <div class="user-meta">
+                    <h1 class="user-name">{{ user.name }}</h1>
+                    <span class="user-role-badge">Member</span>
+                </div>
+            </div>
+            <div class="user-details">
+                <div class="detail-item">
+                    <i data-lucide="mail" class="detail-icon"></i>
+                    <span class="detail-text">{{ user.email }}</span>
+                </div>
+                <div class="detail-item">
+                    <i data-lucide="calendar" class="detail-icon"></i>
+                    <span class="detail-text">Joined {{ user.member_since }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats Row -->
+        <div class="profile-stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon-wrapper text-teal">
+                    <i data-lucide="indian-rupee" class="stat-icon"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Total Spent</span>
+                    <span class="stat-value text-tabular">₹{{ "{:,.2f}".format(stats.total_spent) }}</span>
+                    <span class="stat-meta teal"><i data-lucide="trending-down" class="meta-icon"></i> Within Budget</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon-wrapper text-orange">
+                    <i data-lucide="credit-card" class="stat-icon"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Transactions</span>
+                    <span class="stat-value text-tabular">{{ stats.transaction_count }}</span>
+                    <span class="stat-meta text-muted"><i data-lucide="activity" class="meta-icon"></i> This Month</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon-wrapper text-purple">
+                    <i data-lucide="tag" class="stat-icon"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Top Category</span>
+                    <span class="stat-value">{{ stats.top_category }}</span>
+                    <span class="stat-meta purple"><i data-lucide="star" class="meta-icon"></i> Most Frequent</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Layout: Recent Transactions (Left/Main) & Category Breakdown (Right/Side) -->
+    <div class="profile-main-grid">
+        <!-- Transaction History Table -->
+        <div class="profile-card table-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i data-lucide="clock" class="header-icon"></i>
+                    Recent Transactions
+                </h2>
+            </div>
+            <div class="table-responsive">
+                <table class="tx-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th class="text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr>
+                            <td class="text-muted text-tabular">{{ tx.date }}</td>
+                            <td class="font-medium">{{ tx.description }}</td>
+                            <td>
+                                <span class="badge badge--{{ tx.category }}">
+                                    <span class="badge-dot"></span>
+                                    {{ tx.category_label }}
+                                </span>
+                            </td>
+                            <td class="text-right text-tabular font-bold">₹{{ "{:,.2f}".format(tx.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="profile-card breakdown-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i data-lucide="pie-chart" class="header-icon"></i>
+                    Category Breakdown
+                </h2>
+            </div>
+            <div class="breakdown-list">
+                {% for cat in categories %}
+                <div class="breakdown-item">
+                    <div class="breakdown-info">
+                        <div class="breakdown-label">
+                            <i data-lucide="{{ cat.icon }}" class="category-icon text-{{ cat.slug }}"></i>
+                            <span>{{ cat.name }}</span>
+                        </div>
+                        <span class="breakdown-amount text-tabular">₹{{ "{:,.2f}".format(cat.amount) }}</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar progress-bar--{{ cat.slug }}" style="width: {{ cat.percent }}%"></div>
+                    </div>
+                    <div class="breakdown-meta">
+                        <span>{{ cat.percent }}% of monthly budget</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
