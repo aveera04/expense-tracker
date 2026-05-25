@@ -77,8 +77,37 @@ def register():
     return render_template("register.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        error = None
+
+        if not email or "@" not in email:
+            error = "Please enter a valid email address."
+        elif not password:
+            error = "Password is required."
+
+        if error:
+            return render_template("login.html", error=error), 400
+
+        conn = get_db()
+        user = conn.execute(
+            "SELECT * FROM users WHERE email = ?", (email,)
+        ).fetchone()
+        conn.close()
+
+        if not user or not check_password_hash(user["password_hash"], password):
+            return render_template("login.html", error="Invalid email or password."), 400
+
+        session["user_id"] = email
+        return redirect(url_for("profile"))
+
+    if "user_id" in session:
+        return redirect(url_for("profile"))
+
     return render_template("login.html")
 
 
@@ -98,12 +127,50 @@ def privacy():
 
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    session.clear()
+    return redirect(url_for("login"))
 
 
 @app.route("/profile")
+@login_required
 def profile():
-    return "Profile page — coming in Step 4"
+    # Hardcoded data for Step 4
+    user = {
+        "name": "Arjun Mehta",
+        "email": "arjun.mehta@example.com",
+        "initials": "AM",
+        "member_since": "January 2024"
+    }
+    
+    stats = {
+        "total_spent": 24850.00,
+        "transaction_count": 18,
+        "top_category": "Food & Dining"
+    }
+    
+    transactions = [
+        {"date": "2026-05-25", "description": "Swiggy Order", "category": "food", "category_label": "Food & Dining", "amount": 340.00},
+        {"date": "2026-05-24", "description": "Uber Ride", "category": "travel", "category_label": "Travel", "amount": 210.00},
+        {"date": "2026-05-23", "description": "Netflix Subscription", "category": "entertainment", "category_label": "Entertainment", "amount": 649.00},
+        {"date": "2026-05-22", "description": "Big Bazaar Grocery", "category": "grocery", "category_label": "Groceries", "amount": 1820.00},
+        {"date": "2026-05-20", "description": "Amazon Purchase", "category": "shopping", "category_label": "Shopping", "amount": 2199.00}
+    ]
+    
+    categories = [
+        {"name": "Food & Dining", "slug": "food", "amount": 8420.00, "percent": 34, "icon": "utensils"},
+        {"name": "Shopping", "slug": "shopping", "amount": 6199.00, "percent": 25, "icon": "shopping-bag"},
+        {"name": "Travel", "slug": "travel", "amount": 4350.00, "percent": 18, "icon": "car"},
+        {"name": "Groceries", "slug": "grocery", "amount": 3680.00, "percent": 15, "icon": "shopping-cart"},
+        {"name": "Entertainment", "slug": "entertainment", "amount": 2201.00, "percent": 9, "icon": "film"}
+    ]
+    
+    return render_template(
+        "profile.html", 
+        user=user, 
+        stats=stats, 
+        transactions=transactions, 
+        categories=categories
+    )
 
 
 @app.route("/expenses/add")
