@@ -6,6 +6,12 @@ from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.db import get_db, init_db, seed_db
+from database.queries import (
+    get_user_by_id,
+    get_summary_stats,
+    get_recent_transactions,
+    get_category_breakdown,
+)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
@@ -131,45 +137,82 @@ def logout():
     return redirect(url_for("login"))
 
 
+# Maps database category names → CSS slug, human label, and Lucide icon
+CATEGORY_META = {
+    "Food":          {"slug": "food",          "label": "Food & Dining",  "icon": "utensils"},
+    "Transport":     {"slug": "travel",         "label": "Transport",       "icon": "car"},
+    "Bills":         {"slug": "bills",          "label": "Bills",           "icon": "file-text"},
+    "Health":        {"slug": "health",         "label": "Health",          "icon": "heart-pulse"},
+    "Entertainment": {"slug": "entertainment",  "label": "Entertainment",   "icon": "film"},
+    "Shopping":      {"slug": "shopping",       "label": "Shopping",        "icon": "shopping-bag"},
+    "Other":         {"slug": "other",          "label": "Other",           "icon": "circle-ellipsis"},
+}
+
+DEFAULT_META = {"slug": "other", "label": "Other", "icon": "circle-ellipsis"}
+
+
 @app.route("/profile")
 @login_required
 def profile():
-    # Hardcoded data for Step 4
+    email = session["user_id"]
+
+    # Resolve the integer user id from the email stored in session
+    conn = get_db()
+    row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+
+    if row is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    db_user_id = row["id"]
+
+    # ---- Live DB queries ------------------------------------------------
+    user_data   = get_user_by_id(db_user_id)
+    stats       = get_summary_stats(db_user_id)
+    raw_txs     = get_recent_transactions(db_user_id, limit=10)
+    raw_cats    = get_category_breakdown(db_user_id)
+
+    # ---- Build user dict for template -----------------------------------
+    name = user_data["name"] if user_data else email
+    initials = "".join(part[0].upper() for part in name.split() if part)[:2]
     user = {
-        "name": "Arjun Mehta",
-        "email": "arjun.mehta@example.com",
-        "initials": "AM",
-        "member_since": "January 2024"
+        "name": name,
+        "email": user_data["email"] if user_data else email,
+        "initials": initials,
+        "member_since": user_data["member_since"] if user_data else "",
     }
-    
-    stats = {
-        "total_spent": 24850.00,
-        "transaction_count": 18,
-        "top_category": "Food & Dining"
-    }
-    
-    transactions = [
-        {"date": "2026-05-25", "description": "Swiggy Order", "category": "food", "category_label": "Food & Dining", "amount": 340.00},
-        {"date": "2026-05-24", "description": "Uber Ride", "category": "travel", "category_label": "Travel", "amount": 210.00},
-        {"date": "2026-05-23", "description": "Netflix Subscription", "category": "entertainment", "category_label": "Entertainment", "amount": 649.00},
-        {"date": "2026-05-22", "description": "Big Bazaar Grocery", "category": "grocery", "category_label": "Groceries", "amount": 1820.00},
-        {"date": "2026-05-20", "description": "Amazon Purchase", "category": "shopping", "category_label": "Shopping", "amount": 2199.00}
-    ]
-    
-    categories = [
-        {"name": "Food & Dining", "slug": "food", "amount": 8420.00, "percent": 34, "icon": "utensils"},
-        {"name": "Shopping", "slug": "shopping", "amount": 6199.00, "percent": 25, "icon": "shopping-bag"},
-        {"name": "Travel", "slug": "travel", "amount": 4350.00, "percent": 18, "icon": "car"},
-        {"name": "Groceries", "slug": "grocery", "amount": 3680.00, "percent": 15, "icon": "shopping-cart"},
-        {"name": "Entertainment", "slug": "entertainment", "amount": 2201.00, "percent": 9, "icon": "film"}
-    ]
-    
+
+    # ---- Enrich transactions with slug and label -------------------------
+    transactions = []
+    for tx in raw_txs:
+        meta = CATEGORY_META.get(tx["category"], DEFAULT_META)
+        transactions.append({
+            "date":           tx["date"],
+            "description":    tx["description"],
+            "category":       meta["slug"],
+            "category_label": meta["label"],
+            "amount":         tx["amount"],
+        })
+
+    # ---- Enrich category breakdown with slug, label, icon ---------------
+    categories = []
+    for cat in raw_cats:
+        meta = CATEGORY_META.get(cat["name"], DEFAULT_META)
+        categories.append({
+            "name":    meta["label"],
+            "slug":    meta["slug"],
+            "amount":  cat["amount"],
+            "percent": cat["pct"],
+            "icon":    meta["icon"],
+        })
+
     return render_template(
-        "profile.html", 
-        user=user, 
-        stats=stats, 
-        transactions=transactions, 
-        categories=categories
+        "profile.html",
+        user=user,
+        stats=stats,
+        transactions=transactions,
+        categories=categories,
     )
 
 

@@ -861,6 +861,13 @@ a { color: inherit; text-decoration: none; }
     --cat-grocery-light: var(--accent-2-light);
     --cat-shopping: #ec4899;
     --cat-shopping-light: #fdf2f8;
+    /* New: bills, health, other */
+    --cat-bills: #dc6f1a;
+    --cat-bills-light: #fef3e8;
+    --cat-health: #16a34a;
+    --cat-health-light: #dcfce7;
+    --cat-other: #64748b;
+    --cat-other-light: #f1f5f9;
 }
 
 .profile-container {
@@ -1167,6 +1174,30 @@ a { color: inherit; text-decoration: none; }
     background: var(--cat-shopping);
 }
 
+.badge--bills {
+    background: var(--cat-bills-light);
+    color: var(--cat-bills);
+}
+.badge--bills .badge-dot {
+    background: var(--cat-bills);
+}
+
+.badge--health {
+    background: var(--cat-health-light);
+    color: var(--cat-health);
+}
+.badge--health .badge-dot {
+    background: var(--cat-health);
+}
+
+.badge--other {
+    background: var(--cat-other-light);
+    color: var(--cat-other);
+}
+.badge--other .badge-dot {
+    background: var(--cat-other);
+}
+
 /* Category list breakdown */
 .breakdown-list {
     display: flex;
@@ -1205,6 +1236,9 @@ a { color: inherit; text-decoration: none; }
 .category-icon.text-entertainment { color: var(--cat-entertainment); }
 .category-icon.text-grocery { color: var(--cat-grocery); }
 .category-icon.text-shopping { color: var(--cat-shopping); }
+.category-icon.text-bills { color: var(--cat-bills); }
+.category-icon.text-health { color: var(--cat-health); }
+.category-icon.text-other { color: var(--cat-other); }
 
 .breakdown-amount {
     font-weight: 600;
@@ -1230,6 +1264,9 @@ a { color: inherit; text-decoration: none; }
 .progress-bar--entertainment { background: var(--cat-entertainment); }
 .progress-bar--grocery { background: var(--cat-grocery); }
 .progress-bar--shopping { background: var(--cat-shopping); }
+.progress-bar--bills { background: var(--cat-bills); }
+.progress-bar--health { background: var(--cat-health); }
+.progress-bar--other { background: var(--cat-other); }
 
 .breakdown-meta {
     font-size: 0.725rem;
