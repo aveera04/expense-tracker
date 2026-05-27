@@ -48,19 +48,39 @@ def get_user_by_id(user_id):
         conn.close()
 
 
-def get_summary_stats(user_id):
+def _build_date_filter(date_from=None, date_to=None):
+    """Build a date filter clause and param list for SQLite."""
+    date_filter = ""
+    params = []
+    if date_from and date_to:
+        date_filter = " AND date BETWEEN ? AND ?"
+        params.extend([date_from, date_to])
+    elif date_from:
+        date_filter = " AND date >= ?"
+        params.append(date_from)
+    elif date_to:
+        date_filter = " AND date <= ?"
+        params.append(date_to)
+    return date_filter, params
+
+
+def get_summary_stats(user_id, date_from=None, date_to=None):
     """
     Return a dict with 'total_spent', 'transaction_count', 'top_category'
     for the given user_id.
+    When date_from and/or date_to are provided, expenses are filtered accordingly.
     Returns zeros and "—" if the user has no expenses.
     """
     conn = _get_db()
     try:
+        date_filter, date_params = _build_date_filter(date_from, date_to)
+        params_base = [user_id] + date_params
+
         # Total spent and transaction count
         agg = conn.execute(
             "SELECT COALESCE(SUM(amount), 0) AS total_spent, COUNT(*) AS transaction_count "
-            "FROM expenses WHERE user_id = ?",
-            (user_id,),
+            "FROM expenses WHERE user_id = ?" + date_filter,
+            params_base,
         ).fetchone()
 
         total_spent = agg["total_spent"]
@@ -68,9 +88,9 @@ def get_summary_stats(user_id):
 
         # Top category by total amount spent
         top_row = conn.execute(
-            "SELECT category FROM expenses WHERE user_id = ? "
-            "GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
-            (user_id,),
+            "SELECT category FROM expenses WHERE user_id = ?" + date_filter +
+            " GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
+            params_base,
         ).fetchone()
 
         top_category = top_row["category"] if top_row else "—"
@@ -84,19 +104,26 @@ def get_summary_stats(user_id):
         conn.close()
 
 
-def get_recent_transactions(user_id, limit=10):
+def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
     """
     Return a list of dicts (newest-first), each with:
     'date', 'description', 'category', 'amount'.
+    When date_from and/or date_to are provided, expenses are filtered accordingly.
     Returns an empty list if the user has no expenses.
     """
+    # Clamp limit to a safe range (1 to 100)
+    limit = max(1, min(limit, 100))
     conn = _get_db()
     try:
+        date_filter, date_params = _build_date_filter(date_from, date_to)
+        params = [user_id] + date_params
+        params.append(limit)
+
         rows = conn.execute(
             "SELECT date, description, category, amount "
-            "FROM expenses WHERE user_id = ? "
-            "ORDER BY date DESC, id DESC LIMIT ?",
-            (user_id, limit),
+            "FROM expenses WHERE user_id = ?" + date_filter +
+            " ORDER BY date DESC, id DESC LIMIT ?",
+            params,
         ).fetchall()
 
         return [
@@ -112,20 +139,24 @@ def get_recent_transactions(user_id, limit=10):
         conn.close()
 
 
-def get_category_breakdown(user_id):
+def get_category_breakdown(user_id, date_from=None, date_to=None):
     """
     Return a list of dicts (ordered by amount desc), each with:
     'name', 'amount', 'pct'.
     'pct' values are integers that sum to exactly 100.
+    When date_from and/or date_to are provided, expenses are filtered accordingly.
     Returns an empty list if the user has no expenses.
     """
     conn = _get_db()
     try:
+        date_filter, date_params = _build_date_filter(date_from, date_to)
+        params = [user_id] + date_params
+
         rows = conn.execute(
             "SELECT category AS name, SUM(amount) AS amount "
-            "FROM expenses WHERE user_id = ? "
-            "GROUP BY category ORDER BY amount DESC",
-            (user_id,),
+            "FROM expenses WHERE user_id = ?" + date_filter +
+            " GROUP BY category ORDER BY amount DESC",
+            params,
         ).fetchall()
 
         if not rows:

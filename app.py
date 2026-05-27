@@ -1,7 +1,9 @@
 import os
+import calendar
+from datetime import date, datetime
 from functools import wraps
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -14,7 +16,16 @@ from database.queries import (
 )
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
+
+# Secure secret key loading with fallback only for testing/dev
+import sys
+secret_key = os.environ.get("SECRET_KEY")
+if not secret_key:
+    if "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("FLASK_DEBUG") == "1":
+        secret_key = "dev-secret-key"
+    else:
+        raise RuntimeError("SECRET_KEY environment variable must be set")
+app.secret_key = secret_key
 
 with app.app_context():
     init_db()
@@ -28,6 +39,32 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return decorated
+
+
+def _parse_date(value):
+    """Return a date object or None if absent/malformed."""
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _months_ago(n, ref_date=None):
+    """Return a date approximately n calendar months before ref_date."""
+    if ref_date is None:
+        ref_date = date.today()
+    month = ref_date.month - n
+    year = ref_date.year
+    while month <= 0:
+        month += 12
+        year -= 1
+    # Clamp day to last valid day of that month
+    last_day = calendar.monthrange(year, month)[1]
+    day = min(ref_date.day, last_day)
+    return date(year, month, day)
+
 
 
 # ------------------------------------------------------------------ #
@@ -167,11 +204,53 @@ def profile():
 
     db_user_id = row["id"]
 
+    # ---- Parse & validate date-range query params -----------------------
+    raw_from = request.args.get("date_from", "").strip()
+    raw_to   = request.args.get("date_to",   "").strip()
+
+    date_from = _parse_date(raw_from)
+    date_to   = _parse_date(raw_to)
+
+    # Spec: If either parameter is absent or malformed, the route falls back to unfiltered
+    if not date_from or not date_to:
+        date_from = None
+        date_to   = None
+
+    # If both are present but in the wrong order, flash and clear
+    if date_from and date_to and date_from > date_to:
+        flash("Start date must be before end date.", "error")
+        date_from = None
+        date_to   = None
+
+    # Avoid redundant date string-to-object-to-string round-tripping
+    str_from = raw_from if date_from else None
+    str_to   = raw_to if date_to else None
+
+    # ---- Compute preset date windows (in Python, not in the template) ---
+    today = date.today()
+    first_of_month = today.replace(day=1)
+
+    preset_dates = {
+        "this_month":   {"date_from": first_of_month.isoformat(),   "date_to": today.isoformat()},
+        "last_3_months":{"date_from": _months_ago(3, today).isoformat(),   "date_to": today.isoformat()},
+        "last_6_months":{"date_from": _months_ago(6, today).isoformat(),   "date_to": today.isoformat()},
+    }
+
+    # Detect which preset is active (if any)
+    active_preset = "all_time"
+    if str_from and str_to:
+        active_preset = "custom"
+        for name, pd in preset_dates.items():
+            if str_from == pd["date_from"] and str_to == pd["date_to"]:
+                active_preset = name
+                break
+
+
     # ---- Live DB queries ------------------------------------------------
     user_data   = get_user_by_id(db_user_id)
-    stats       = get_summary_stats(db_user_id)
-    raw_txs     = get_recent_transactions(db_user_id, limit=10)
-    raw_cats    = get_category_breakdown(db_user_id)
+    stats       = get_summary_stats(db_user_id, date_from=str_from, date_to=str_to)
+    raw_txs     = get_recent_transactions(db_user_id, limit=10, date_from=str_from, date_to=str_to)
+    raw_cats    = get_category_breakdown(db_user_id, date_from=str_from, date_to=str_to)
 
     # ---- Build user dict for template -----------------------------------
     name = user_data["name"] if user_data else email
@@ -213,6 +292,11 @@ def profile():
         stats=stats,
         transactions=transactions,
         categories=categories,
+        # Filter state
+        date_from=str_from,
+        date_to=str_to,
+        active_preset=active_preset,
+        preset_dates=preset_dates,
     )
 
 

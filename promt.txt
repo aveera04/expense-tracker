@@ -38,3 +38,13 @@ Match the style of terms.html.
 3. In @templates/landing.html, update the "Privacy Policy"
 footer link href from "#" to "/privacy".
 4. Make sure the appearance looks like the website's theme
+
+
+
+Subagents cration promt:
+"''
+Use this agent to write pytest test cases for
+Spendly features. Invoke after implementing any feature to
+generate tests based on the feature spec, not the
+imp lementation.
+"''

@@ -1,0 +1,172 @@
+/* ------------------------------------------------------------------ */
+/* Filter Bar (Profile Page)                                           */
+/* ------------------------------------------------------------------ */
+
+:root {
+    --shadow-filter: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.01);
+}
+
+.filter-bar {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-filter);
+}
+
+.filter-presets {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+.filter-preset-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+}
+
+.filter-preset-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: var(--accent-light);
+}
+
+.filter-preset-btn--active {
+    background: var(--accent);
+    color: var(--paper-card);
+    border-color: var(--accent);
+}
+
+.filter-preset-btn--active:hover {
+    background: var(--accent);
+    color: var(--paper-card);
+    border-color: var(--accent);
+}
+
+.filter-divider {
+    width: 1px;
+    height: 1.75rem;
+    background: var(--border);
+    margin: 0 0.25rem;
+    display: block;
+}
+
+.filter-custom {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.filter-custom-fields {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.filter-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+}
+
+.filter-date-input {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.75rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+}
+
+.filter-date-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.filter-apply-btn {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--paper-card);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 1.25rem;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.filter-apply-btn:hover {
+    opacity: 0.88;
+}
+
+@media (max-width: 990px) {
+    .filter-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .filter-custom {
+        width: 100%;
+    }
+
+    .filter-custom-fields {
+        flex: 1;
+    }
+}
+
+@media (max-width: 540px) {
+    .filter-presets {
+        width: 100%;
+    }
+
+    .filter-preset-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .filter-custom-fields {
+        width: 100%;
+    }
+
+    .filter-field {
+        flex: 1;
+    }
+
+    .filter-date-input {
+        width: 100%;
+    }
+}

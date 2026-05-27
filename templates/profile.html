@@ -2,9 +2,65 @@
 
 {% block title %}My Profile — Spendly{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="profile-container">
-    <!-- Top Grid: User Info Card & Summary Stats -->
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash flash--{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Date Filter Bar -->
+    <div class="filter-bar" data-active-preset="{{ active_preset }}">
+        <div class="filter-presets">
+            <a id="preset-this-month"
+               href="{{ url_for('profile', date_from=preset_dates.this_month.date_from, date_to=preset_dates.this_month.date_to) }}"
+               class="filter-preset-btn{% if active_preset == 'this_month' %} filter-preset-btn--active{% endif %}">
+                This Month
+            </a>
+            <a id="preset-last-3-months"
+               href="{{ url_for('profile', date_from=preset_dates.last_3_months.date_from, date_to=preset_dates.last_3_months.date_to) }}"
+               class="filter-preset-btn{% if active_preset == 'last_3_months' %} filter-preset-btn--active{% endif %}">
+                Last 3 Months
+            </a>
+            <a id="preset-last-6-months"
+               href="{{ url_for('profile', date_from=preset_dates.last_6_months.date_from, date_to=preset_dates.last_6_months.date_to) }}"
+               class="filter-preset-btn{% if active_preset == 'last_6_months' %} filter-preset-btn--active{% endif %}">
+                Last 6 Months
+            </a>
+            <a id="preset-all-time"
+               href="{{ url_for('profile') }}"
+               class="filter-preset-btn{% if active_preset == 'all_time' %} filter-preset-btn--active{% endif %}">
+                All Time
+            </a>
+        </div>
+
+        <form id="filter-custom-form" class="filter-custom" method="get" action="{{ url_for('profile') }}">
+            <div class="filter-custom-fields">
+                <div class="filter-field">
+                    <label class="filter-label" for="date_from">From</label>
+                    <input id="date_from" class="filter-date-input" type="date" name="date_from"
+                           value="{{ date_from or '' }}">
+                </div>
+                <div class="filter-field">
+                    <label class="filter-label" for="date_to">To</label>
+                    <input id="date_to" class="filter-date-input" type="date" name="date_to"
+                           value="{{ date_to or '' }}">
+                </div>
+            </div>
+            <button id="filter-apply-btn" class="filter-apply-btn" type="submit">Apply</button>
+        </form>
+    </div>
+
     <div class="profile-header-grid">
         <!-- User Info Card -->
         <div class="profile-card user-card">
