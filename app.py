@@ -2,6 +2,8 @@ import os
 import calendar
 from datetime import date, datetime
 from functools import wraps
+import math
+import secrets
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
@@ -42,6 +44,23 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return decorated
+
+
+def resolve_db_user_id(email):
+    """Helper to resolve the integer user id from session email."""
+    conn = get_db()
+    row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
+def generate_csrf_token():
+    """Generates a CSRF token for the current session."""
+    if "_csrf_token" not in session:
+        session["_csrf_token"] = secrets.token_hex(16)
+    return session["_csrf_token"]
+
+app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
 
 def _parse_date(value):
@@ -202,16 +221,10 @@ DEFAULT_META = {"slug": "other", "label": "Other", "icon": "circle-ellipsis"}
 def profile():
     email = session["user_id"]
 
-    # Resolve the integer user id from the email stored in session
-    conn = get_db()
-    row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
-    conn.close()
-
-    if row is None:
+    db_user_id = resolve_db_user_id(email)
+    if db_user_id is None:
         session.clear()
         return redirect(url_for("login"))
-
-    db_user_id = row["id"]
 
     # ---- Parse & validate date-range query params -----------------------
     raw_from = request.args.get("date_from", "").strip()
@@ -309,9 +322,81 @@ def profile():
     )
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
+@login_required
 def add_expense():
-    return "Add expense — coming in Step 7"
+    email = session["user_id"]
+
+    db_user_id = resolve_db_user_id(email)
+    if db_user_id is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        raw_amount   = request.form.get("amount", "").strip()
+        category     = request.form.get("category", "").strip()
+        raw_date     = request.form.get("date", "").strip()
+        description  = request.form.get("description", "").strip()
+
+        error = None
+
+        # Check CSRF
+        if not app.config.get("TESTING"):
+            token = session.get("_csrf_token", None)
+            if not token or token != request.form.get("_csrf_token"):
+                error = "Invalid or missing CSRF token. Please try again."
+
+        # Validate amount — must be a positive number and not NaN/Infinity
+        if not error:
+            try:
+                amount = float(raw_amount)
+                if math.isnan(amount) or math.isinf(amount) or amount <= 0:
+                    raise ValueError
+            except ValueError:
+                error = "Amount must be a positive number."
+
+        # Validate category — must exist in CATEGORY_META
+        if not error and category not in CATEGORY_META:
+            error = "Please select a valid category."
+
+        # Validate date — must be a valid ISO date
+        if not error:
+            parsed_date = _parse_date(raw_date)
+            if parsed_date is None:
+                error = "Please enter a valid date."
+
+        # Optional: cap description length
+        if not error and len(description) > 200:
+            error = "Description must be 200 characters or fewer."
+
+        if error:
+            return render_template(
+                "add_expense.html",
+                error=error,
+                categories=CATEGORY_META,
+                form={"amount": raw_amount, "category": category,
+                      "date": raw_date, "description": description},
+            ), 400
+
+        # All valid — insert into expenses
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
+            (db_user_id, amount, category, parsed_date.isoformat(), description or None),
+        )
+        conn.commit()
+        conn.close()
+
+        flash("Expense added successfully!", "success")
+        return redirect(url_for("profile"))
+
+    # GET — render the blank form
+    today = date.today().isoformat()
+    return render_template(
+        "add_expense.html",
+        categories=CATEGORY_META,
+        form={"amount": "", "category": "", "date": today, "description": ""},
+    )
 
 
 @app.route("/expenses/<int:id>/edit")

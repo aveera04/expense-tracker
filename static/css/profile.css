@@ -6,6 +6,41 @@
     --shadow-filter: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.01);
 }
 
+/* ------------------------------------------------------------------ */
+/* Card header layout with optional action button                      */
+/* ------------------------------------------------------------------ */
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.card-header-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.85rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.card-header-action:hover {
+    background: var(--paper-card);
+    border-color: var(--accent);
+}
+
+
 .filter-bar {
     background: var(--paper-card);
     border: 1px solid var(--border);
