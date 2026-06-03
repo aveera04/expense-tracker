@@ -1,1 +1,7 @@
-{}
+{
+  "permissions": {
+    "allow": [
+      "mcp__sqlite__list_tables"
+    ]
+  }
+}

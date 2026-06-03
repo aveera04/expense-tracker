@@ -15,6 +15,9 @@ from database.queries import (
     get_category_breakdown,
 )
 
+from dotenv import load_dotenv
+load_dotenv()
+
 app = Flask(__name__)
 
 # Secure secret key loading with fallback only for testing/dev
@@ -162,6 +165,12 @@ def terms():
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")
+
+
+@app.route("/analytics")
+@login_required
+def analytics():
+    return render_template("analytics.html")
 
 
 # ------------------------------------------------------------------ #
