@@ -129,7 +129,12 @@
                     <i data-lucide="clock" class="header-icon"></i>
                     Recent Transactions
                 </h2>
+                <a id="add-expense-link" href="{{ url_for('add_expense') }}" class="card-header-action">
+                    <i data-lucide="plus" class="icon-inline"></i>
+                    Add Expense
+                </a>
             </div>
+
             <div class="table-responsive">
                 <table class="tx-table">
                     <thead>

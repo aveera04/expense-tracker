@@ -309,9 +309,80 @@ def profile():
     )
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
+@login_required
 def add_expense():
-    return "Add expense — coming in Step 7"
+    email = session["user_id"]
+
+    # Resolve integer user_id from session email
+    conn = get_db()
+    row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+
+    if row is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    db_user_id = row["id"]
+
+    if request.method == "POST":
+        raw_amount   = request.form.get("amount", "").strip()
+        category     = request.form.get("category", "").strip()
+        raw_date     = request.form.get("date", "").strip()
+        description  = request.form.get("description", "").strip()
+
+        error = None
+
+        # Validate amount — must be a positive number
+        try:
+            amount = float(raw_amount)
+            if amount <= 0:
+                raise ValueError
+        except ValueError:
+            error = "Amount must be a positive number."
+
+        # Validate category — must exist in CATEGORY_META
+        if not error and category not in CATEGORY_META:
+            error = "Please select a valid category."
+
+        # Validate date — must be a valid ISO date
+        if not error:
+            parsed_date = _parse_date(raw_date)
+            if parsed_date is None:
+                error = "Please enter a valid date."
+
+        # Optional: cap description length
+        if not error and len(description) > 200:
+            error = "Description must be 200 characters or fewer."
+
+        if error:
+            return render_template(
+                "add_expense.html",
+                error=error,
+                categories=CATEGORY_META,
+                form={"amount": raw_amount, "category": category,
+                      "date": raw_date, "description": description},
+            ), 400
+
+        # All valid — insert into expenses
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
+            (db_user_id, amount, category, raw_date, description or None),
+        )
+        conn.commit()
+        conn.close()
+
+        flash("Expense added successfully!", "success")
+        return redirect(url_for("profile"))
+
+    # GET — render the blank form
+    today = date.today().isoformat()
+    return render_template(
+        "add_expense.html",
+        categories=CATEGORY_META,
+        form={"amount": "", "category": "", "date": today, "description": ""},
+    )
 
 
 @app.route("/expenses/<int:id>/edit")

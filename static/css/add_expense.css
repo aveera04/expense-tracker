@@ -1,0 +1,270 @@
+/* ------------------------------------------------------------------ */
+/* Add Expense Page                                                     */
+/* ------------------------------------------------------------------ */
+
+.add-expense-section {
+    padding: 3rem 2rem 5rem;
+}
+
+.add-expense-container {
+    max-width: 540px;
+    margin: 0 auto;
+}
+
+/* Back link */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin-bottom: 2rem;
+    transition: color 0.15s ease;
+}
+
+.back-link:hover {
+    color: var(--accent);
+}
+
+/* Header */
+.add-expense-header {
+    margin-bottom: 2rem;
+}
+
+.add-expense-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.title-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--accent);
+}
+
+.add-expense-subtitle {
+    font-size: 0.9rem;
+    color: var(--ink-muted);
+}
+
+/* Card */
+.add-expense-card {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem 2rem 2.25rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+/* Error banner */
+.expense-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+}
+
+/* Form groups */
+.expense-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+}
+
+.expense-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.required-star {
+    color: var(--danger);
+}
+
+.optional-tag {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--ink-faint);
+    text-transform: lowercase;
+    letter-spacing: 0;
+}
+
+/* Inputs */
+.expense-input {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.9rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+}
+
+.expense-input::placeholder {
+    color: var(--ink-faint);
+}
+
+.expense-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+    background: var(--paper-card);
+}
+
+/* Amount input with ₹ prefix */
+.amount-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.currency-prefix {
+    position: absolute;
+    left: 0.9rem;
+    font-size: 1rem;
+    color: var(--ink-muted);
+    pointer-events: none;
+    font-weight: 500;
+}
+
+.amount-input {
+    padding-left: 2rem;
+}
+
+/* Remove browser number input spinners */
+.amount-input::-webkit-outer-spin-button,
+.amount-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.amount-input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Select wrapper */
+.select-wrapper {
+    position: relative;
+}
+
+.expense-select {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: 2.5rem;
+}
+
+.select-chevron {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1rem;
+    height: 1rem;
+    color: var(--ink-muted);
+    pointer-events: none;
+}
+
+/* Char hint */
+.char-hint {
+    font-size: 0.73rem;
+    color: var(--ink-faint);
+}
+
+/* Actions */
+.expense-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-soft);
+}
+
+.btn-cancel {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 1.25rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-cancel:hover {
+    background: var(--paper-warm);
+    color: var(--ink);
+}
+
+.btn-add-expense {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--paper-card);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 1.5rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.btn-add-expense:hover {
+    opacity: 0.88;
+}
+
+.btn-add-expense:active {
+    transform: scale(0.98);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .add-expense-section {
+        padding: 2rem 1rem 4rem;
+    }
+
+    .add-expense-card {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .expense-form-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .btn-cancel,
+    .btn-add-expense {
+        width: 100%;
+        justify-content: center;
+    }
+}
