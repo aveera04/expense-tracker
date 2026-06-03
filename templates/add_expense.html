@@ -33,7 +33,8 @@
             </div>
             {% endif %}
 
-            <form id="add-expense-form" method="POST" action="{{ url_for('add_expense') }}" novalidate>
+            <form id="add-expense-form" method="POST" action="{{ url_for('add_expense') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
                 <!-- Amount -->
                 <div class="expense-form-group">

@@ -2,6 +2,8 @@ import os
 import calendar
 from datetime import date, datetime
 from functools import wraps
+import math
+import secrets
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
@@ -42,6 +44,23 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return decorated
+
+
+def resolve_db_user_id(email):
+    """Helper to resolve the integer user id from session email."""
+    conn = get_db()
+    row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
+def generate_csrf_token():
+    """Generates a CSRF token for the current session."""
+    if "_csrf_token" not in session:
+        session["_csrf_token"] = secrets.token_hex(16)
+    return session["_csrf_token"]
+
+app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
 
 def _parse_date(value):
@@ -202,16 +221,10 @@ DEFAULT_META = {"slug": "other", "label": "Other", "icon": "circle-ellipsis"}
 def profile():
     email = session["user_id"]
 
-    # Resolve the integer user id from the email stored in session
-    conn = get_db()
-    row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
-    conn.close()
-
-    if row is None:
+    db_user_id = resolve_db_user_id(email)
+    if db_user_id is None:
         session.clear()
         return redirect(url_for("login"))
-
-    db_user_id = row["id"]
 
     # ---- Parse & validate date-range query params -----------------------
     raw_from = request.args.get("date_from", "").strip()
@@ -314,16 +327,10 @@ def profile():
 def add_expense():
     email = session["user_id"]
 
-    # Resolve integer user_id from session email
-    conn = get_db()
-    row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
-    conn.close()
-
-    if row is None:
+    db_user_id = resolve_db_user_id(email)
+    if db_user_id is None:
         session.clear()
         return redirect(url_for("login"))
-
-    db_user_id = row["id"]
 
     if request.method == "POST":
         raw_amount   = request.form.get("amount", "").strip()
@@ -333,13 +340,20 @@ def add_expense():
 
         error = None
 
-        # Validate amount — must be a positive number
-        try:
-            amount = float(raw_amount)
-            if amount <= 0:
-                raise ValueError
-        except ValueError:
-            error = "Amount must be a positive number."
+        # Check CSRF
+        if not app.config.get("TESTING"):
+            token = session.get("_csrf_token", None)
+            if not token or token != request.form.get("_csrf_token"):
+                error = "Invalid or missing CSRF token. Please try again."
+
+        # Validate amount — must be a positive number and not NaN/Infinity
+        if not error:
+            try:
+                amount = float(raw_amount)
+                if math.isnan(amount) or math.isinf(amount) or amount <= 0:
+                    raise ValueError
+            except ValueError:
+                error = "Amount must be a positive number."
 
         # Validate category — must exist in CATEGORY_META
         if not error and category not in CATEGORY_META:
@@ -368,7 +382,7 @@ def add_expense():
         conn = get_db()
         conn.execute(
             "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
-            (db_user_id, amount, category, raw_date, description or None),
+            (db_user_id, amount, category, parsed_date.isoformat(), description or None),
         )
         conn.commit()
         conn.close()
