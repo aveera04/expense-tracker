@@ -5,7 +5,7 @@ from functools import wraps
 import math
 import secrets
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -15,6 +15,8 @@ from database.queries import (
     get_summary_stats,
     get_recent_transactions,
     get_category_breakdown,
+    get_expense_by_id,
+    update_expense,
 )
 
 from dotenv import load_dotenv
@@ -289,6 +291,7 @@ def profile():
     for tx in raw_txs:
         meta = CATEGORY_META.get(tx["category"], DEFAULT_META)
         transactions.append({
+            "id":             tx["id"],
             "date":           tx["date"],
             "description":    tx["description"],
             "category":       meta["slug"],
@@ -399,9 +402,90 @@ def add_expense():
     )
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
+@login_required
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    email = session["user_id"]
+
+    db_user_id = resolve_db_user_id(email)
+    if db_user_id is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id, db_user_id)
+    if expense is None:
+        abort(404)
+
+    if request.method == "POST":
+        raw_amount   = request.form.get("amount", "").strip()
+        category     = request.form.get("category", "").strip()
+        raw_date     = request.form.get("date", "").strip()
+        description  = request.form.get("description", "").strip()
+
+        error = None
+
+        # Check CSRF
+        if not app.config.get("TESTING"):
+            token = session.get("_csrf_token", None)
+            if not token or token != request.form.get("_csrf_token"):
+                error = "Invalid or missing CSRF token. Please try again."
+
+        # Validate amount — must be a positive number and not NaN/Infinity
+        if not error:
+            try:
+                amount = float(raw_amount)
+                if math.isnan(amount) or math.isinf(amount) or amount <= 0:
+                    raise ValueError
+            except ValueError:
+                error = "Amount must be a positive number."
+
+        # Validate category — must exist in CATEGORY_META
+        if not error and category not in CATEGORY_META:
+            error = "Please select a valid category."
+
+        # Validate date — must be a valid ISO date
+        if not error:
+            parsed_date = _parse_date(raw_date)
+            if parsed_date is None:
+                error = "Please enter a valid date."
+
+        # Optional: cap description length
+        if not error and len(description) > 200:
+            error = "Description must be 200 characters or fewer."
+
+        if error:
+            return render_template(
+                "edit_expense.html",
+                error=error,
+                categories=CATEGORY_META,
+                expense=expense,
+                form={"amount": raw_amount, "category": category,
+                      "date": raw_date, "description": description},
+            ), 400
+
+        # All valid — update the row
+        rowcount = update_expense(
+            id, db_user_id, amount, category, parsed_date.isoformat(), description or None,
+        )
+        if rowcount == 0:
+            # Defensive: row was deleted between load and update
+            abort(404)
+
+        flash("Expense updated successfully!", "success")
+        return redirect(url_for("profile"))
+
+    # GET — render the pre-filled form
+    return render_template(
+        "edit_expense.html",
+        categories=CATEGORY_META,
+        expense=expense,
+        form={
+            "amount": expense["amount"],
+            "category": expense["category"],
+            "date": expense["date"],
+            "description": expense["description"],
+        },
+    )
 
 
 @app.route("/expenses/<int:id>/delete")

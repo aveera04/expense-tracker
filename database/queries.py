@@ -107,7 +107,7 @@ def get_summary_stats(user_id, date_from=None, date_to=None):
 def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
     """
     Return a list of dicts (newest-first), each with:
-    'date', 'description', 'category', 'amount'.
+    'id', 'date', 'description', 'category', 'amount'.
     When date_from and/or date_to are provided, expenses are filtered accordingly.
     Returns an empty list if the user has no expenses.
     """
@@ -120,7 +120,7 @@ def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
         params.append(limit)
 
         rows = conn.execute(
-            "SELECT date, description, category, amount "
+            "SELECT id, date, description, category, amount "
             "FROM expenses WHERE user_id = ?" + date_filter +
             " ORDER BY date DESC, id DESC LIMIT ?",
             params,
@@ -128,6 +128,7 @@ def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
 
         return [
             {
+                "id": row["id"],
                 "date": row["date"],
                 "description": row["description"] or "",
                 "category": row["category"],
@@ -135,6 +136,59 @@ def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
             }
             for row in rows
         ]
+    finally:
+        conn.close()
+
+
+
+def get_expense_by_id(expense_id, user_id):
+    """
+    Return a dict with 'id', 'user_id', 'amount', 'category', 'date',
+    'description' for the given expense, but only if it is owned by user_id.
+
+    Returns None if the expense does not exist OR is owned by a different
+    user. The combined WHERE clause is the single ownership check — callers
+    must not split the load from the ownership check.
+    """
+    conn = _get_db()
+    try:
+        row = conn.execute(
+            "SELECT id, user_id, amount, category, date, description "
+            "FROM expenses WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "id": row["id"],
+            "user_id": row["user_id"],
+            "amount": row["amount"],
+            "category": row["category"],
+            "date": row["date"],
+            "description": row["description"] or "",
+        }
+    finally:
+        conn.close()
+
+
+def update_expense(expense_id, user_id, amount, category, date, description):
+    """
+    Update the amount, category, date, and description of an expense row,
+    but only if it is owned by user_id.
+
+    Returns the number of rows affected (0 if the row does not exist or is
+    owned by a different user; 1 on a successful update). The user_id and
+    created_at columns are intentionally never overwritten.
+    """
+    conn = _get_db()
+    try:
+        cur = conn.execute(
+            "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? "
+            "WHERE id = ? AND user_id = ?",
+            (amount, category, date, description, expense_id, user_id),
+        )
+        conn.commit()
+        return cur.rowcount
     finally:
         conn.close()
 

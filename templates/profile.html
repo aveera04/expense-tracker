@@ -4,6 +4,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/edit_expense.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -143,6 +144,7 @@
                             <th>Description</th>
                             <th>Category</th>
                             <th class="text-right">Amount</th>
+                            <th class="text-right col-actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -157,6 +159,11 @@
                                 </span>
                             </td>
                             <td class="text-right text-tabular font-bold">₹{{ "{:,.2f}".format(tx.amount) }}</td>
+                            <td class="text-right col-actions">
+                                <a href="{{ url_for('edit_expense', id=tx.id) }}" class="tx-action-link" aria-label="Edit transaction" title="Edit">
+                                    <i data-lucide="pencil" class="icon-inline"></i>
+                                </a>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
