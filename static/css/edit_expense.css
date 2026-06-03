@@ -1,0 +1,61 @@
+/* ------------------------------------------------------------------ */
+/* Edit Expense — page-specific styles                                 */
+/* ------------------------------------------------------------------ */
+
+/* Profile table: actions column */
+.col-actions {
+    width: 48px;
+}
+
+.tx-action-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tx-action-link:hover,
+.tx-action-link:focus-visible {
+    background: var(--accent-light);
+    border-color: var(--accent-light);
+    color: var(--accent);
+}
+
+/* Save Changes button — same visual language as .btn-add-expense */
+.btn-save-changes {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--paper-card);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 1.5rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.btn-save-changes:hover {
+    opacity: 0.88;
+}
+
+.btn-save-changes:active {
+    transform: scale(0.98);
+}
+
+/* Responsive — match add_expense.css breakpoint */
+@media (max-width: 600px) {
+    .btn-save-changes {
+        width: 100%;
+        justify-content: center;
+    }
+}
