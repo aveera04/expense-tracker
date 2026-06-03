@@ -48,3 +48,6 @@ Spendly features. Invoke after implementing any feature to
 generate tests based on the feature spec, not the
 imp lementation.
 "''
+
+
+Commit all changes with an appropriate conventional commit message, push to the current feature branch, create a pull request into main with a proper title and description based on the spec, merge it using squash merge, switch to main, pull latest, and delete the feature branch locally.

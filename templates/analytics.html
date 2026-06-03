@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Spendly{% endblock %}
+
+{% block head %}
+<style>
+/* Existing styles */
+.analytics-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+}
+.coming-soon-badge {
+    background-color: var(--accent-light);
+    color: var(--accent);
+    padding: 0.25rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2rem;
+    display: inline-block;
+}
+.analytics-title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(3rem, 5vw, 4.5rem);
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+.analytics-subtitle {
+    font-family: var(--font-body);
+    font-size: clamp(1.125rem, 2vw, 1.25rem);
+    color: var(--ink-muted);
+    margin-bottom: 2.5rem;
+    max-width: 600px;
+    line-height: 1.6;
+    margin-left: auto;
+    margin-right: auto;
+}
+.analytics-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 3rem;
+    width: 100%;
+}
+.btn-primary-large {
+    background: var(--ink);
+    color: var(--paper-card);
+    padding: 0.875rem 2rem;
+    border-radius: 9999px;
+    border: none;
+    font-weight: 500;
+    font-size: 1.125rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-primary-large:hover {
+    background: var(--accent);
+}
+.btn-secondary-large {
+    color: var(--ink);
+    background: transparent;
+    padding: 0.875rem 2rem;
+    border-radius: 9999px;
+    border: 1px solid var(--ink);
+    font-weight: 500;
+    font-size: 1.125rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+.btn-secondary-large:hover {
+    background: var(--ink);
+    color: var(--paper-card);
+}
+.notify-form {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+.notify-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    background: var(--paper-card);
+    outline: none;
+}
+.notify-input:focus {
+    border-color: var(--accent);
+}
+.notify-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--accent);
+    color: var(--paper-card);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.notify-btn:hover {
+    opacity: 0.9;
+}
+.success-msg {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--accent);
+    font-weight: 500;
+    background: var(--accent-light);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* New Component Styles */
+.dashboard-preview {
+    max-width: 1000px;
+    margin: 0 auto 8rem auto;
+    padding: 0 1.5rem;
+    position: relative;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: var(--paper-card);
+    overflow: hidden;
+    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.05);
+}
+.browser-chrome {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    background: #faf9f7;
+}
+.browser-chrome .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+.browser-chrome .dot.red { background: #ff5f56; }
+.browser-chrome .dot.yellow { background: #ffbd2e; }
+.browser-chrome .dot.green { background: #27c93f; }
+.dashboard-content {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    background: var(--paper-card);
+    min-height: 400px;
+    position: relative;
+}
+@media (min-width: 768px) {
+    .dashboard-content { grid-template-columns: 2fr 1fr; }
+}
+.preview-card {
+    background: white;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.preview-card h3 {
+    font-family: var(--font-body);
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+.fake-line-chart {
+    height: 160px;
+    width: 100%;
+    background: linear-gradient(180deg, var(--accent-light) 0%, transparent 100%);
+    border-bottom: 2px solid var(--accent);
+    border-radius: 4px;
+    position: relative;
+}
+.fake-donut-chart {
+    height: 120px;
+    width: 120px;
+    border-radius: 50%;
+    border: 16px solid var(--accent);
+    border-right-color: var(--accent-2);
+    border-bottom-color: #3b82f6;
+    margin: 0 auto;
+}
+.category-bars {
+    margin-top: 1rem;
+}
+.cat-bar {
+    margin-bottom: 0.75rem;
+}
+.cat-bar-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+    margin-bottom: 0.25rem;
+}
+.cat-bar-track {
+    height: 8px;
+    background: var(--border-soft);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.cat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+}
+.preview-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 250px;
+    background: linear-gradient(0deg, var(--paper) 0%, rgba(247,246,243,0.8) 50%, transparent 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 2rem;
+    pointer-events: none;
+}
+.lock-badge {
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--ink-soft);
+    font-weight: 500;
+    font-size: 0.875rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.features-section {
+    max-width: var(--max-width);
+    margin: 0 auto 8rem auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+@media (min-width: 768px) {
+    .features-section { grid-template-columns: repeat(3, 1fr); }
+}
+.feature-box {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 2rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+}
+.feature-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+.feature-box h3 {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1.125rem;
+    margin-bottom: 0.75rem;
+}
+.feature-box p {
+    color: var(--ink-muted);
+    line-height: 1.6;
+}
+
+.countdown-section {
+    background: var(--paper-warm);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 5rem 1.5rem;
+    text-align: center;
+}
+.countdown-subtitle {
+    font-family: var(--font-body);
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin-bottom: 2.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.875rem;
+}
+.countdown-timer {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    align-items: center;
+}
+@media (min-width: 768px) {
+    .countdown-timer { gap: 2rem; }
+}
+.countdown-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.countdown-value {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 5vw, 4.5rem);
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+}
+.countdown-label {
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.countdown-colon {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    color: var(--ink-faint);
+    padding-bottom: 2rem;
+    margin-top: -0.5rem;
+}
+
+.bottom-cta-section {
+    padding: 8rem 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.bottom-cta-title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(2rem, 3.5vw, 2.5rem);
+    color: var(--ink);
+    margin-bottom: 1rem;
+}
+.bottom-cta-subtitle {
+    color: var(--ink-muted);
+    margin-bottom: 2rem;
+}
+.bottom-cta-form {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.bottom-cta-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    background: var(--paper-card);
+}
+.bottom-cta-btn {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--ink);
+    color: var(--paper-card);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.bottom-cta-btn:hover {
+    background: var(--accent);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="analytics-hero">
+    <div class="coming-soon-badge">
+        ⚡ Coming Soon
+    </div>
+    
+    <h1 class="analytics-title">
+        See your money, clearly.
+    </h1>
+
+    <p class="analytics-subtitle">
+        Advanced Analytics for Spendly is on its way — AI-powered insights, trend forecasting, and deep spending breakdowns. All in one beautiful dashboard.
+    </p>
+
+    <div class="analytics-actions">
+        <button class="btn-primary-large">
+            Get Early Access
+        </button>
+        <button class="btn-secondary-large">
+            Learn more 
+            <i data-lucide="arrow-down" style="width: 1.25rem; height: 1.25rem;"></i>
+        </button>
+    </div>
+
+    <form class="notify-form" onsubmit="event.preventDefault(); document.getElementById('success-msg').style.display='flex'; this.style.display='none';">
+        <input type="email" required placeholder="Enter your email" class="notify-input">
+        <button type="submit" class="notify-btn">
+            Notify me
+        </button>
+    </form>
+    
+    <div id="success-msg" class="success-msg">
+        <i data-lucide="check-circle-2" style="width: 1.25rem; height: 1.25rem;"></i>
+        You're on the list! 🎉
+    </div>
+</section>
+
+<!-- Dashboard Preview -->
+<div class="dashboard-preview">
+    <div class="browser-chrome">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+    </div>
+    <div class="dashboard-content">
+        <div class="preview-card" style="grid-column: span 1;">
+            <h3>Spending Trend</h3>
+            <div class="fake-line-chart"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div class="preview-card">
+                <h3>Breakdown</h3>
+                <div class="fake-donut-chart"></div>
+            </div>
+            <div class="preview-card">
+                <h3 style="font-size: 0.875rem;">Top Categories</h3>
+                <div class="category-bars">
+                    <div class="cat-bar">
+                        <div class="cat-bar-header"><span>Housing</span> <span>70%</span></div>
+                        <div class="cat-bar-track"><div class="cat-bar-fill" style="width: 70%; background: var(--accent);"></div></div>
+                    </div>
+                    <div class="cat-bar">
+                        <div class="cat-bar-header"><span>Food</span> <span>45%</span></div>
+                        <div class="cat-bar-track"><div class="cat-bar-fill" style="width: 45%; background: var(--accent-2);"></div></div>
+                    </div>
+                    <div class="cat-bar">
+                        <div class="cat-bar-header"><span>Transport</span> <span>30%</span></div>
+                        <div class="cat-bar-track"><div class="cat-bar-fill" style="width: 30%; background: #3b82f6;"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="preview-overlay">
+        <div class="lock-badge">
+            <i data-lucide="lock" style="width: 1rem; height: 1rem;"></i>
+            Unlock with Advanced Analytics
+        </div>
+    </div>
+</div>
+
+<!-- Features -->
+<section class="features-section">
+    <div class="feature-box">
+        <div class="feature-icon-wrapper">
+            <i data-lucide="sparkles" style="width: 1.5rem; height: 1.5rem;"></i>
+        </div>
+        <h3>AI Spending Insights</h3>
+        <p>Get plain-English summaries of where your money really goes each month.</p>
+    </div>
+    <div class="feature-box">
+        <div class="feature-icon-wrapper">
+            <i data-lucide="clock-3" style="width: 1.5rem; height: 1.5rem;"></i>
+        </div>
+        <h3>Trend Forecasting</h3>
+        <p>Predict next month's spending based on your history before it happens.</p>
+    </div>
+    <div class="feature-box">
+        <div class="feature-icon-wrapper">
+            <i data-lucide="indian-rupee" style="width: 1.5rem; height: 1.5rem;"></i>
+        </div>
+        <h3>Smart Budget Alerts</h3>
+        <p>Real-time nudges when you're about to exceed a category — not after.</p>
+    </div>
+</section>
+
+<!-- Countdown -->
+<section class="countdown-section">
+    <div class="countdown-subtitle">Launching in</div>
+    <div class="countdown-timer">
+        <div class="countdown-block">
+            <div class="countdown-value">90</div>
+            <div class="countdown-label">Days</div>
+        </div>
+        <div class="countdown-colon">:</div>
+        <div class="countdown-block">
+            <div class="countdown-value">00</div>
+            <div class="countdown-label">Hours</div>
+        </div>
+        <div class="countdown-colon">:</div>
+        <div class="countdown-block">
+            <div class="countdown-value">00</div>
+            <div class="countdown-label">Minutes</div>
+        </div>
+        <div class="countdown-colon">:</div>
+        <div class="countdown-block">
+            <div class="countdown-value">00</div>
+            <div class="countdown-label">Seconds</div>
+        </div>
+    </div>
+</section>
+
+<!-- Bottom CTA -->
+<section class="bottom-cta-section">
+    <h2 class="bottom-cta-title">Be the first to know.</h2>
+    <p class="bottom-cta-subtitle">Get notified the moment Advanced Analytics goes live.</p>
+    <form class="bottom-cta-form" onsubmit="event.preventDefault(); document.getElementById('bottom-success').style.display='flex'; this.style.display='none';">
+        <input type="email" required placeholder="Enter your email" class="bottom-cta-input">
+        <button type="submit" class="bottom-cta-btn">Notify me</button>
+    </form>
+    <div id="bottom-success" class="success-msg" style="width: 100%; max-width: 400px; display: none;">
+        <i data-lucide="check-circle-2" style="width: 1.25rem; height: 1.25rem;"></i>
+        You're on the list! 🎉
+    </div>
+</section>
+{% endblock %}
