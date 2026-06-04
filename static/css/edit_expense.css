@@ -2,9 +2,9 @@
 /* Edit Expense — page-specific styles                                 */
 /* ------------------------------------------------------------------ */
 
-/* Profile table: actions column */
+/* Profile table: actions column — wide enough for Edit + Delete icon buttons */
 .col-actions {
-    width: 48px;
+    width: 72px;
 }
 
 .tx-action-link {

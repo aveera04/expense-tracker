@@ -193,6 +193,29 @@ def update_expense(expense_id, user_id, amount, category, date, description):
         conn.close()
 
 
+def delete_expense_row(expense_id, user_id):
+    """
+    Hard-delete the expense row identified by expense_id, but only if it is
+    owned by user_id.
+
+    Returns the number of rows affected:
+      1  — row found and deleted
+      0  — row did not exist OR is owned by a different user
+    The combined WHERE clause prevents both "not found" and "wrong owner"
+    from being distinguished by the caller, matching the security requirement.
+    """
+    conn = _get_db()
+    try:
+        cur = conn.execute(
+            "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        )
+        conn.commit()
+        return cur.rowcount
+    finally:
+        conn.close()
+
+
 def get_category_breakdown(user_id, date_from=None, date_to=None):
     """
     Return a list of dicts (ordered by amount desc), each with:

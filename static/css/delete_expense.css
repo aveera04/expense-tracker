@@ -1,0 +1,45 @@
+/* ------------------------------------------------------------------ */
+/* Delete Expense — profile table action button                        */
+/* Reuses the same design tokens as edit_expense.css so both          */
+/* controls have matching visual weight.                               */
+/* ------------------------------------------------------------------ */
+
+/* Wrapper for the inline delete form — no extra margin or padding */
+.tx-delete-form {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+/* Delete icon button — mirrors .tx-action-link visually */
+.tx-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: inherit;
+    padding: 0;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Danger state on hover/focus for the delete button — uses design tokens */
+.tx-action-btn--danger:hover,
+.tx-action-btn--danger:focus-visible {
+    background: var(--danger-light);
+    border-color: var(--danger-border);
+    color: var(--danger);
+}
+
+/* Ensure both action controls sit side-by-side with a small gap */
+.tx-actions-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}

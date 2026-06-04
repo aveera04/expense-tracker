@@ -1,3 +1,4 @@
+import hmac
 import os
 import calendar
 from datetime import date, datetime
@@ -17,6 +18,7 @@ from database.queries import (
     get_category_breakdown,
     get_expense_by_id,
     update_expense,
+    delete_expense_row,
 )
 
 from dotenv import load_dotenv
@@ -48,12 +50,50 @@ def login_required(f):
     return decorated
 
 
+def requires_db_user(f):
+    """
+    Decorator that resolves the integer DB user-id from the session email and
+    injects it as the first positional argument (``db_user_id``) of the wrapped
+    view.  If the session email does not map to a real user (ghost session),
+    the session is cleared and the request is redirected to login.
+
+    Must be applied *after* @login_required so the session is guaranteed to
+    contain ``user_id`` before this decorator runs.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        email = session["user_id"]
+        db_user_id = resolve_db_user_id(email)
+        if db_user_id is None:
+            session.clear()
+            return redirect(url_for("login"))
+        return f(*args, db_user_id=db_user_id, **kwargs)
+    return decorated
+
+
 def resolve_db_user_id(email):
-    """Helper to resolve the integer user id from session email."""
+    """Return the integer DB user id for the given email, or None."""
     conn = get_db()
     row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
     conn.close()
     return row["id"] if row else None
+
+
+def _validate_csrf():
+    """
+    Abort 400 if the CSRF token in the submitted form does not match the one
+    stored in the session.  Uses a constant-time comparison to prevent
+    timing-based token oracle attacks.
+
+    No-op when ``app.config['TESTING']`` is True so tests can submit forms
+    without synthesising valid tokens.
+    """
+    if app.config.get("TESTING"):
+        return
+    session_token = session.get("_csrf_token") or ""
+    form_token = request.form.get("_csrf_token") or ""
+    if not session_token or not hmac.compare_digest(session_token, form_token):
+        abort(400)
 
 
 def generate_csrf_token():
@@ -327,14 +367,8 @@ def profile():
 
 @app.route("/expenses/add", methods=["GET", "POST"])
 @login_required
-def add_expense():
-    email = session["user_id"]
-
-    db_user_id = resolve_db_user_id(email)
-    if db_user_id is None:
-        session.clear()
-        return redirect(url_for("login"))
-
+@requires_db_user
+def add_expense(db_user_id):
     if request.method == "POST":
         raw_amount   = request.form.get("amount", "").strip()
         category     = request.form.get("category", "").strip()
@@ -343,11 +377,11 @@ def add_expense():
 
         error = None
 
-        # Check CSRF
-        if not app.config.get("TESTING"):
-            token = session.get("_csrf_token", None)
-            if not token or token != request.form.get("_csrf_token"):
-                error = "Invalid or missing CSRF token. Please try again."
+        # Validate CSRF — constant-time comparison, no-op in TESTING mode
+        try:
+            _validate_csrf()
+        except Exception:
+            error = "Invalid or missing CSRF token. Please try again."
 
         # Validate amount — must be a positive number and not NaN/Infinity
         if not error:
@@ -404,14 +438,8 @@ def add_expense():
 
 @app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 @login_required
-def edit_expense(id):
-    email = session["user_id"]
-
-    db_user_id = resolve_db_user_id(email)
-    if db_user_id is None:
-        session.clear()
-        return redirect(url_for("login"))
-
+@requires_db_user
+def edit_expense(id, db_user_id):
     expense = get_expense_by_id(id, db_user_id)
     if expense is None:
         abort(404)
@@ -424,11 +452,11 @@ def edit_expense(id):
 
         error = None
 
-        # Check CSRF
-        if not app.config.get("TESTING"):
-            token = session.get("_csrf_token", None)
-            if not token or token != request.form.get("_csrf_token"):
-                error = "Invalid or missing CSRF token. Please try again."
+        # Validate CSRF — constant-time comparison, no-op in TESTING mode
+        try:
+            _validate_csrf()
+        except Exception:
+            error = "Invalid or missing CSRF token. Please try again."
 
         # Validate amount — must be a positive number and not NaN/Infinity
         if not error:
@@ -488,9 +516,21 @@ def edit_expense(id):
     )
 
 
-@app.route("/expenses/<int:id>/delete")
-def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+@app.route("/expenses/<int:id>/delete", methods=["POST"])
+@login_required
+@requires_db_user
+def delete_expense(id, db_user_id):
+    # Validate CSRF — constant-time comparison, abort 400 on mismatch
+    _validate_csrf()
+
+    # Delete with atomic ownership guard: WHERE id = ? AND user_id = ?
+    # rowcount == 0 covers both "not found" and "wrong owner" without leaking which.
+    rowcount = delete_expense_row(id, db_user_id)
+    if rowcount == 0:
+        abort(404)
+
+    flash("Expense deleted successfully!", "success")
+    return redirect(url_for("profile"))
 
 
 if __name__ == "__main__":
